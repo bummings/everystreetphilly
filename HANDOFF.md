@@ -1,0 +1,100 @@
+# Every Street Philly — future-session handoff
+
+Read this first when reopening the project in VS Code/Codex.
+
+## Current state
+
+This is a static GitHub Pages site whose principal feature is an interactive
+Philadelphia running map. The current `index.html` is the preferred
+field-journal layout: desktop text is on the left and the map is intentionally
+tall on the right. The stylesheet query string
+`variation.css?v=20260728-layout` is intentional—it busts a Chrome cache issue
+that made an earlier layout update look as though it had not applied.
+
+The visible map is **scorecard mode**:
+
+- Black = completed street coverage **and** original recorded GPS routes.
+- Coral = a named, runnable street-network way not yet verified complete.
+- The city exterior is masked dark and the Philadelphia boundary is outlined.
+
+The raw GPS overlay is deliberate. An earlier street-only scorecard made
+Wissahickon / Forbidden Drive appear incomplete because public trails are not
+always present in the runnable-road network. CityStrides' purple LifeMap shows
+GPS traces, so the `recorded-routes-on-scorecard` layer was added in `script.js`
+to retain those traces in black. Do not remove it without a trail-aware
+replacement.
+
+## Files that matter
+
+```text
+index.html                    deployed entry page; scorecard enabled here
+styles.css                    shared site styling
+variation.css                 field-journal / tall-map desktop layout
+script.js                     MapLibre map, layers, boundary mask, guestbook
+data/runs.js                  local GPS route data used in browser
+data/scorecard.js             local completed + remaining street data
+data/philly-boundary.js       local city boundary
+data/scorecard-summary.json   scorecard totals/settings snapshot
+phila.png / og.png            decorative outline / social preview
+.nojekyll                     keep for GitHub Pages
+```
+
+Keep this folder structure unchanged when publishing. In particular, `data/`
+must be beside `index.html`.
+
+## Design / behavior constraints
+
+- Palette: paper `#fff8ef`, near-black `#241a17`, coral `#f05b43`.
+- Map uses MapLibre plus OpenStreetMap raster tiles. Map tiles, the MapLibre CDN,
+  and Google Fonts need internet; the GPS, boundary, and scorecard layers are
+  bundled locally.
+- Guestbook and visit count are browser-local (`localStorage`), not shared or
+  backed by a server.
+- The visible number `794 GPS-backed runs` is currently HTML copy, not computed
+  automatically on page load.
+
+## Accuracy caveat
+
+The street scorecard is an independent conservative approximation, not an
+official CityStrides export. It uses an OpenStreetMap-derived CityStrides-style
+named, runnable street network and local GPS-to-road matching. CityStrides has
+its own graph, access rules, and matching behavior. Do not promise pixel-perfect
+parity. When coral looks wrong, inspect the individual named street, its OSM
+geometry, and nearby GPS trace before changing thresholds just to hide it.
+
+## Updating runs
+
+There is no automated Strava sync yet. The pragmatic future workflow is:
+
+1. Download new Strava GPX/FIT files or a refreshed full archive.
+2. Run a local importer that produces `runs.geojson` / `runs.js`.
+3. Rebuild the scorecard from the route data and road network.
+4. Replace `data/runs.js`, `data/scorecard.js`, and
+   `data/scorecard-summary.json`, then publish.
+
+The generator scripts and fuller source GeoJSON files are in the local working
+project that originally produced this package, not in this small deployment
+bundle. A proper next improvement is a one-command weekly importer that
+deduplicates new activities, updates the run count, regenerates the browser
+files, and copies them here. A true automatic Strava pull requires a hosted
+backend and Strava OAuth; GitHub Pages alone cannot safely do that.
+
+## Current matching settings (source pipeline)
+
+The most recent scorecard build used:
+
+- GPS snap distance: **24 meters**
+- Completed-way threshold: **65%**
+
+It classifies full OSM ways to avoid tiny dashed black/coral fragments. It is a
+heuristic; tune only after checking a representative mismatch.
+
+## Best next work
+
+1. Build a friendly weekly import/update script.
+2. Add an intentional trail network if road-only scorecard parity needs to
+   improve; preserve the raw-GPS overlay in the meantime.
+3. Replace the local-only guestbook with a backend/form service if public notes
+   should persist for everyone.
+4. Use downloaded tiles/PMTiles only after checking licensing if a fully offline
+   basemap becomes important.

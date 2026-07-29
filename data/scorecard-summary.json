@@ -1,0 +1,8 @@
+{
+  "network_ways": 22787,
+  "completed_ways": 17170,
+  "remaining_ways": 5617,
+  "partial_ways": 2167,
+  "snap_distance_meters": 24,
+  "completion_threshold": 0.65
+}

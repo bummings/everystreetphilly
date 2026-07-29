@@ -1,0 +1,159 @@
+.journal-shell {
+  width: min(1320px, 100%);
+  padding-top: 1.5rem;
+}
+
+.masthead {
+  position: relative;
+  display: grid;
+  grid-template-areas: "copy art";
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: clamp(1rem, 2vw, 2rem);
+  min-height: 0;
+  padding: clamp(1.5rem, 2.5vw, 3rem);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.masthead-art {
+  display: grid;
+  grid-area: art;
+  place-items: center;
+}
+
+.masthead-copy {
+  position: relative;
+  min-width: 0;
+  z-index: 1;
+}
+
+.masthead-copy { grid-area: copy; }
+
+.masthead h1 {
+  max-width: none;
+  font-size: clamp(3rem, 4vw, 5.1rem);
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
+.masthead-lede {
+  max-width: 34rem;
+  margin: 1.35rem 0 0;
+  font-size: clamp(1rem, 1.6vw, 1.18rem);
+  line-height: 1.7;
+}
+
+.masthead-flag {
+  display: block;
+  width: min(100%, 610px);
+  height: auto;
+}
+
+.map-ledger {
+  margin-top: 1.5rem;
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  border: 1px solid rgba(36, 26, 23, 0.18);
+  border-radius: var(--radius);
+  background: rgba(248, 243, 235, 0.55);
+}
+
+.ledger-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 1.4rem;
+}
+
+.ledger-heading h2,
+.story-label h2 {
+  font-size: clamp(2rem, 3.5vw, 3.7rem);
+}
+
+.ledger-heading > p {
+  max-width: 15rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+
+.journal-map-frame {
+  min-height: min(72vh, 780px);
+  border-color: var(--text);
+}
+
+.map-ledger .map-caption { color: var(--muted); }
+
+@media (min-width: 1000px) {
+  .map-ledger {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(245px, 0.42fr);
+    grid-template-rows: 1fr auto;
+    column-gap: clamp(1.5rem, 3vw, 3.5rem);
+    align-items: start;
+  }
+
+  .ledger-heading {
+    display: block;
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+    padding-top: 0.25rem;
+  }
+
+  .ledger-heading > p { margin-top: 1.35rem; }
+
+  .journal-map-frame {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    min-height: min(82vh, 920px);
+  }
+
+  .map-ledger .map-caption {
+    grid-column: 2;
+    grid-row: 2;
+    max-width: 24rem;
+    margin: 2rem 0 0;
+  }
+}
+
+.story-section {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.75fr) minmax(0, 1.25fr);
+  gap: clamp(2.5rem, 9vw, 11rem);
+  padding: clamp(3rem, 7vw, 7rem) clamp(1rem, 5vw, 5rem);
+}
+
+.story-label { align-self: start; }
+
+.story-copy {
+  max-width: 44rem;
+  font-size: clamp(1rem, 1.45vw, 1.14rem);
+  line-height: 1.85;
+}
+
+.story-copy p { margin: 0; }
+.story-copy p + p { margin-top: 1.45rem; }
+
+.journal-guestbook { margin-top: 0; }
+
+@media (max-width: 760px) {
+  .masthead,
+  .story-section { grid-template-columns: 1fr; }
+
+  .masthead {
+    grid-template-areas:
+      "copy"
+      "art";
+    min-height: 0;
+    gap: 2rem;
+  }
+
+  .ledger-heading { display: grid; gap: 0.9rem; }
+  .journal-map-frame { min-height: 65vh; }
+  .story-section { padding-inline: 0.5rem; }
+}
