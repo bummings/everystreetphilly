@@ -35,6 +35,7 @@ data/runs.js                  local GPS route data used in browser
 data/scorecard.js             local completed + remaining street data
 data/philly-boundary.js       local city boundary
 data/scorecard-summary.json   scorecard totals/settings snapshot
+tools/build-routes.py         Strava activity export → browser GPS route layer
 phila.png / og.png            decorative outline / social preview
 .nojekyll                     keep for GitHub Pages
 ```
@@ -64,20 +65,28 @@ geometry, and nearby GPS trace before changing thresholds just to hide it.
 
 ## Updating runs
 
-There is no automated Strava sync yet. The pragmatic future workflow is:
+There is no automated Strava sync yet. To refresh the **GPS route layer** from
+a Strava export:
 
-1. Download new Strava GPX/FIT files or a refreshed full archive.
-2. Run a local importer that produces `runs.geojson` / `runs.js`.
-3. Rebuild the scorecard from the route data and road network.
-4. Replace `data/runs.js`, `data/scorecard.js`, and
-   `data/scorecard-summary.json`, then publish.
+1. Download a refreshed full Strava archive and unzip it.
+2. Install the one dependency: `python3 -m pip install fitdecode`.
+3. Run:
 
-The generator scripts and fuller source GeoJSON files are in the local working
-project that originally produced this package, not in this small deployment
-bundle. A proper next improvement is a one-command weekly importer that
-deduplicates new activities, updates the run count, regenerates the browser
-files, and copies them here. A true automatic Strava pull requires a hosted
-backend and Strava OAuth; GitHub Pages alone cannot safely do that.
+   ```sh
+   python3 tools/build-routes.py /path/to/export/activities data/runs.js \
+     --activities-csv /path/to/export/activities.csv
+   ```
+
+   The CSV is important: it reliably includes only activities Strava calls
+   `Run`, even when older GPX files have missing or inconsistent embedded
+   activity types. The route layer keeps GPS samples about 7 m apart so the
+   map remains responsive.
+4. Validate the result, then publish `data/runs.js`.
+
+This only refreshes the raw black GPS-trace overlay. The completed/remaining
+street scorecard remains an independent snapshot until its separate OSM
+matching pipeline is restored and rerun. A true automatic Strava pull requires
+a hosted backend and Strava OAuth; GitHub Pages alone cannot safely do that.
 
 ## Current matching settings (source pipeline)
 
