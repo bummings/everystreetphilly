@@ -5,10 +5,12 @@ Read this first when reopening the project in VS Code/Codex.
 ## Current state
 
 This is a static site intended for Netlify. `index.html` is the information page
-with the story and guestbook; it links to a standalone, detailed Citystrides-style
-map at `map/index.html` (`/map/`) in a new tab. The map is a single HTML file
-with its route archive embedded. The original local scorecard page/data and its
-refresh pipeline remain in the repository for the field-journal preview.
+with the project story and a link to the standalone, detailed Citystrides-style
+map at `map/index.html` (`/map/`) in a new tab. The public guestbook frontend is
+temporarily disabled while its production configuration is being fixed; its
+Netlify backend and moderator page remain in the repository. The map is a single
+HTML file with its route archive embedded. The original local scorecard page/data
+and its refresh pipeline remain in the repository for the field-journal preview.
 
 The detailed public map in `map/index.html` is separate from the older field-journal preview. The latter is **scorecard mode**:
 
@@ -64,6 +66,9 @@ use it.
   ignored `.env` file and run Netlify Dev. The local Blobs store is separate
   from production. Browser-local guestbook notes from the original version are
   not migrated.
+- The guestbook form is currently absent from the public homepage. Restore its
+  HTML section in `index.html` once the live token configuration is verified;
+  the frontend script safely skips guestbook setup while the form is absent.
 - Guestbook bot friction includes a hidden honeypot, a minimum form time, and a
   short per-IP cooldown. These are basic spam controls, not a guarantee against
   determined abuse; moderation is the final publication gate.

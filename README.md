@@ -1,6 +1,6 @@
 # Every Street Philly — Netlify site
 
-This is a static Netlify site with a small serverless guestbook backend. The homepage contains the project story and guestbook; the detailed interactive run map is served from `map/index.html` at `/map/` (Netlify’s Pretty URLs also resolves `/map`). The homepage opens the map in a new tab.
+This is a static Netlify site with a small serverless guestbook backend. The homepage contains the project story and a link to the detailed interactive run map at `map/index.html` (`/map/`); the map opens in a new tab. The public guestbook form is temporarily removed from the homepage while its production configuration is sorted out. Its backend and private moderator remain in the repository for later reactivation.
 
 ## Deploy with Netlify
 
@@ -47,8 +47,10 @@ Add `everystreetphilly.com` to the Netlify site’s domain settings first. DNS i
 
 The run map is a standalone HTML page with its route, Philadelphia boundary, and incomplete-street data embedded. MapLibre and the OpenFreeMap basemap load from the internet, so map tiles and the map library require a connection. Profile icons link to Strava and CityStrides. Runs without a Strava activity ID remain clickable through their CityStrides activity page; the local link-entry tool is omitted from the public page.
 
-The home page retains the project information and a Netlify-backed guestbook.
-The visit counter remains browser-local.
+The home page retains the project information. The guestbook frontend is
+temporarily disabled; when restored, it will use the Netlify-backed behavior
+described above. The visit counter was part of the guestbook section and is
+currently not displayed.
 
 ## Contact email
 

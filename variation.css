@@ -164,6 +164,8 @@
 .map-launch-copy { max-width: 42rem; }
 .map-launch-copy > p:last-child { max-width: 34rem; color: var(--muted); line-height: 1.65; }
 .map-launch-copy h2 { margin: 0.35rem 0 0.8rem; font-size: clamp(2rem, 3.5vw, 3.7rem); }
-.map-open-link { display: inline-flex; align-items: center; gap: 0.7rem; flex: none; padding: 0.9rem 1.15rem; border: 1px solid var(--text); border-radius: 999px; color: var(--text); font-family: "IBM Plex Mono", monospace; font-size: 0.78rem; text-decoration: none; transition: background 160ms ease, color 160ms ease, transform 160ms ease; }
-.map-open-link:hover { transform: translateY(-2px); background: var(--text); color: var(--bg); }
+.map-open-link { display: inline-flex; align-items: center; gap: 0.7rem; flex: none; padding: 1rem 1.35rem; border: 1px solid #b44b24; border-radius: 999px; background: #b44b24; box-shadow: 0 8px 18px rgba(36, 26, 23, 0.16); color: #fff8ef; font-family: "IBM Plex Mono", monospace; font-size: 0.86rem; font-weight: 600; text-decoration: none; transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease, color 160ms ease, transform 160ms ease; }
+.map-open-link:hover { transform: translateY(-2px); border-color: #963916; background: #963916; box-shadow: 0 12px 24px rgba(36, 26, 23, 0.22); color: #fff8ef; }
+.map-open-link:focus-visible { outline: 3px solid var(--text); outline-offset: 4px; }
+.map-open-link:active { transform: translateY(0); }
 @media (max-width: 700px) { .map-ledger.map-launch { align-items: flex-start; flex-direction: column; min-height: 0; } }

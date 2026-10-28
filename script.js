@@ -1,7 +1,3 @@
-const STORAGE_KEYS = {
-  visits: "every-street-philly-visit-count",
-};
-
 const initializeRunMap = async () => {
   const status = document.querySelector("#map-status");
 
@@ -220,6 +216,8 @@ window.addEventListener("DOMContentLoaded", () => {
   initializeRunMap();
 
   const form = document.querySelector("#guestbook-form");
+  if (!form) return;
+
   const entriesList = document.querySelector("#guestbook-entries");
   const status = document.querySelector("#guestbook-status");
   const counter = document.querySelector("#visit-count");
@@ -277,8 +275,8 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  const visits = Number(localStorage.getItem(STORAGE_KEYS.visits) ?? 0) + 1;
-  localStorage.setItem(STORAGE_KEYS.visits, String(visits));
+  const visits = Number(localStorage.getItem("every-street-philly-visit-count") ?? 0) + 1;
+  localStorage.setItem("every-street-philly-visit-count", String(visits));
   counter.value = String(visits).padStart(6, "0");
 
   let submitting = false;
