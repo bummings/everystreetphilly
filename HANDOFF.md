@@ -30,7 +30,11 @@ index.html                    information page, story, guestbook, and map link
 map/index.html                detailed public map page; route and map data embedded
 styles.css                    shared site styling
 variation.css                 field-journal layout and homepage map launch card
-script.js                     legacy field-journal map and shared guestbook behavior
+script.js                     legacy field-journal map and guestbook frontend
+netlify/functions/            public guestbook API and protected moderation API
+guestbook-admin/              unlisted moderator interface
+netlify.toml                  Netlify publish and functions configuration
+package.json                  Netlify Blobs dependency
 data/runs.js                  local GPS route data used in browser
 data/scorecard.js             local completed + remaining street data
 data/philly-boundary.js       local city boundary
@@ -50,8 +54,27 @@ use it.
 - Map uses MapLibre plus OpenStreetMap raster tiles. Map tiles, the MapLibre CDN,
   and Google Fonts need internet; the GPS, boundary, and scorecard layers are
   bundled locally.
-- Guestbook and visit count are browser-local (`localStorage`), not shared or
-  backed by a server.
+- Guestbook entries use a site-wide Netlify Blobs store. All submissions start
+  pending; only approved notes are public. `/guestbook-admin/` is protected by
+  the `GUESTBOOK_ADMIN_TOKEN` Netlify environment variable and supports approve
+  and delete. Never put this token in source control.
+- Before live submissions can be accepted, set `GUESTBOOK_ADMIN_TOKEN` in the
+  Netlify site's environment variables to a private random secret of at least
+  32 characters. For local moderation, put a separate local value in the
+  ignored `.env` file and run Netlify Dev. The local Blobs store is separate
+  from production. Browser-local guestbook notes from the original version are
+  not migrated.
+- Guestbook bot friction includes a hidden honeypot, a minimum form time, and a
+  short per-IP cooldown. These are basic spam controls, not a guarantee against
+  determined abuse; moderation is the final publication gate.
+- The footer links to `hello@everystreetphilly.com`. Set up a Namecheap email
+  forwarder for alias `hello` and direct it to the owner's private inbox. The
+  free forwarding option supports receiving and forwarding messages, not sending
+  replies from the alias. Keep the destination inbox out of public source and
+  documentation. If changing Namecheap Mail Settings, first check whether any
+  other provider currently handles the domain's MX records.
+- The visit counter remains browser-local (`localStorage`), not a site-wide
+  analytics count.
 - The visible number `794 GPS-backed runs` is currently HTML copy, not computed
   automatically on page load.
 
@@ -104,7 +127,6 @@ heuristic; tune only after checking a representative mismatch.
 1. Build a friendly weekly import/update script.
 2. Add an intentional trail network if road-only scorecard parity needs to
    improve; preserve the raw-GPS overlay in the meantime.
-3. Replace the local-only guestbook with a backend/form service if public notes
-   should persist for everyone.
+3. Consider adding Cloudflare Turnstile if bot submissions become a problem.
 4. Use downloaded tiles/PMTiles only after checking licensing if a fully offline
    basemap becomes important.

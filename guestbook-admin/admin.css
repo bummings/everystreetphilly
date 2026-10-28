@@ -1,0 +1,21 @@
+.guestbook-admin { max-width: 850px; }
+.guestbook-admin h1 { margin: 0.35rem 0 1rem; font: 700 clamp(2.2rem, 6vw, 4rem)/1.05 "Bitter", serif; }
+.admin-intro { max-width: 46rem; color: var(--muted); line-height: 1.7; }
+.admin-status { min-height: 1.2em; color: var(--muted); font-size: .78rem; }
+.admin-login { max-width: 38rem; display: grid; gap: 0.6rem; margin: 2rem 0; }
+.admin-login label { font-size: 0.8rem; }
+.admin-login-row { display: flex; gap: 0.65rem; }
+.admin-login input { min-width: 0; flex: 1; border: 1px solid rgba(36,26,23,.34); border-radius: .25rem; padding: .75rem; background: #fffcf6; color: var(--text); font: inherit; }
+.guestbook-admin button { border: 1px solid var(--text); border-radius: 999px; padding: .65rem 1rem; background: var(--text); color: #f9f3ea; cursor: pointer; font: inherit; font-size: .78rem; }
+.guestbook-admin button:disabled { cursor: wait; opacity: .6; }
+.guestbook-admin .quiet-button { background: transparent; color: var(--text); }
+.admin-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; margin: 2rem 0 1rem; }
+.admin-section-title { margin: 2rem 0 .8rem; font: 600 1.35rem "Bitter", serif; }
+.admin-entry { margin: .75rem 0; padding: 1rem; border: 1px solid rgba(36,26,23,.2); background: rgba(248,243,235,.62); }
+.admin-entry header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 1rem; margin-bottom: .6rem; }
+.admin-entry time, .admin-entry .entry-state { color: var(--muted); font-size: .72rem; }
+.admin-entry p { white-space: pre-wrap; line-height: 1.65; }
+.admin-entry-actions { display: flex; flex-wrap: wrap; gap: .6rem; }
+.admin-entry-actions .delete-button { border-color: #b32b31; background: #b32b31; }
+.admin-empty { color: var(--muted); font-size: .82rem; }
+@media (max-width: 560px) { .admin-login-row { flex-direction: column; align-items: stretch; } }

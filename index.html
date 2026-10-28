@@ -57,18 +57,18 @@
           <form id="guestbook-form" class="guestbook-form">
             <label>Name<input id="guest-name" name="name" type="text" maxlength="40" required autocomplete="name" /></label>
             <label>Note<textarea id="guest-message" name="message" rows="5" maxlength="500" required></textarea></label>
-            <label class="captcha-field" for="guest-answer"><span id="captcha-question">Quick check</span><input id="guest-answer" name="answer" type="number" inputmode="numeric" required /></label>
+            <div class="guestbook-honeypot" aria-hidden="true"><label>Leave this field empty<input name="website" type="text" tabindex="-1" autocomplete="off" /></label></div>
             <p id="guestbook-status" class="form-status" aria-live="polite"></p>
             <button type="submit">Sign it</button>
           </form>
           <div class="guestbook-notes">
-            <p class="guestbook-note">Notes are stored in this browser while the site is local.</p>
+            <p class="guestbook-note">Notes appear here after a quick review.</p>
             <ol id="guestbook-entries" class="guestbook-entries" aria-live="polite"></ol>
           </div>
         </div>
       </section>
     </main>
-    <footer class="site-footer"><p>Every Street Philly</p><a href="mailto:hello@example.com">Contact</a></footer>
+    <footer class="site-footer"><p>Every Street Philly</p><a href="mailto:hello@everystreetphilly.com">Contact</a></footer>
     <script src="script.js"></script>
   </body>
 </html>

@@ -257,6 +257,16 @@ h2 {
   resize: vertical;
 }
 
+.guestbook-honeypot {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
 .guestbook-form input:focus,
 .guestbook-form textarea:focus {
   outline: 2px solid rgba(36, 26, 23, 0.65);
@@ -295,6 +305,8 @@ h2 {
   background: transparent;
   color: var(--text);
 }
+
+.guestbook-form button:disabled { cursor: wait; opacity: 0.65; }
 
 .guestbook-notes {
   min-width: 0;

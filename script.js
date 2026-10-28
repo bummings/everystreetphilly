@@ -1,18 +1,5 @@
 const STORAGE_KEYS = {
-  entries: "every-street-philly-guestbook-entries",
   visits: "every-street-philly-visit-count",
-};
-
-const getStoredEntries = () => {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.entries)) ?? [];
-  } catch {
-    return [];
-  }
-};
-
-const saveEntries = (entries) => {
-  localStorage.setItem(STORAGE_KEYS.entries, JSON.stringify(entries));
 };
 
 const initializeRunMap = async () => {
@@ -235,21 +222,9 @@ window.addEventListener("DOMContentLoaded", () => {
   const form = document.querySelector("#guestbook-form");
   const entriesList = document.querySelector("#guestbook-entries");
   const status = document.querySelector("#guestbook-status");
-  const captchaQuestion = document.querySelector("#captcha-question");
-  const answer = document.querySelector("#guest-answer");
   const counter = document.querySelector("#visit-count");
-  let captchaAnswer = 0;
 
-  const refreshCaptcha = () => {
-    const first = Math.floor(Math.random() * 7) + 2;
-    const second = Math.floor(Math.random() * 8) + 1;
-    captchaAnswer = first + second;
-    captchaQuestion.textContent = `Quick check: ${first} + ${second} =`;
-    answer.value = "";
-  };
-
-  const renderEntries = () => {
-    const entries = getStoredEntries();
+  const renderEntries = (entries) => {
     entriesList.replaceChildren();
 
     if (!entries.length) {
@@ -282,50 +257,67 @@ window.addEventListener("DOMContentLoaded", () => {
       const message = document.createElement("p");
       message.className = "entry-message";
       message.textContent = entry.message;
-
-      const remove = document.createElement("button");
-      remove.className = "delete-entry";
-      remove.type = "button";
-      remove.textContent = "delete";
-      remove.addEventListener("click", () => {
-        saveEntries(getStoredEntries().filter((stored) => stored.id !== entry.id));
-        renderEntries();
-      });
-
-      item.append(meta, message, remove);
+      item.append(meta, message);
       entriesList.append(item);
     });
+  };
+
+  const loadEntries = async () => {
+    try {
+      const response = await fetch("/.netlify/functions/guestbook", { cache: "no-store" });
+      if (!response.ok) throw new Error("Guestbook is temporarily unavailable.");
+      const data = await response.json();
+      renderEntries(data.entries ?? []);
+    } catch {
+      entriesList.replaceChildren();
+      const empty = document.createElement("li");
+      empty.className = "empty-entries";
+      empty.textContent = "The guestbook will be available once the site is served through Netlify.";
+      entriesList.append(empty);
+    }
   };
 
   const visits = Number(localStorage.getItem(STORAGE_KEYS.visits) ?? 0) + 1;
   localStorage.setItem(STORAGE_KEYS.visits, String(visits));
   counter.value = String(visits).padStart(6, "0");
 
-  form.addEventListener("submit", (event) => {
+  let submitting = false;
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
-
-    if (Number(answer.value) !== captchaAnswer) {
-      status.textContent = "That math check is not quite right. Try again.";
-      refreshCaptcha();
-      answer.focus();
-      return;
-    }
+    if (submitting) return;
 
     const data = new FormData(form);
-    const entry = {
-      id: crypto.randomUUID(),
+    const payload = {
       name: data.get("name").trim(),
       message: data.get("message").trim(),
-      createdAt: new Date().toISOString(),
+      website: data.get("website"),
+      startedAt: form.dataset.startedAt,
     };
 
-    saveEntries([entry, ...getStoredEntries()]);
-    form.reset();
-    refreshCaptcha();
-    status.textContent = "Signed. Thanks for leaving a note.";
-    renderEntries();
+    submitting = true;
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    status.textContent = "Sending your note…";
+
+    try {
+      const response = await fetch("/.netlify/functions/guestbook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || "Could not send your note. Please try again.");
+      form.reset();
+      form.dataset.startedAt = String(Date.now());
+      status.textContent = result.message || "Thanks! Your note is in the review queue.";
+    } catch (error) {
+      status.textContent = error.message;
+    } finally {
+      submitting = false;
+      submitButton.disabled = false;
+    }
   });
 
-  refreshCaptcha();
-  renderEntries();
+  form.dataset.startedAt = String(Date.now());
+  loadEntries();
 });
