@@ -8,7 +8,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="variation.css?v=20260728-flag-v10" />
   </head>
@@ -17,7 +16,7 @@
       <header class="masthead" aria-labelledby="headline">
         <div class="masthead-copy">
           <p class="eyebrow">every street philly</p>
-          <h1 id="headline">Yo! I’m runnin every street in Philadelphia.</h1>
+          <h1 id="headline">Runnin' every street in Philadelphia</h1>
           <p class="masthead-lede">the whole tangled, sprawlin, beautiful thing.</p>
         </div>
         <div class="masthead-art">
@@ -25,22 +24,13 @@
         </div>
       </header>
 
-      <section class="map-ledger" aria-labelledby="map-title">
-        <div class="ledger-heading">
-          <div>
-            <p class="eyebrow">the map</p>
-            <h2 id="map-title">So far, </h2>
-          </div>
-          <p></p>
+      <section class="map-ledger map-launch" aria-labelledby="map-title">
+        <div class="map-launch-copy">
+          <p class="eyebrow">the map</p>
+          <h2 id="map-title">The whole city, one run at a time.</h2>
+          <p>Browse the routes, filter by date, and see the streets still waiting.</p>
         </div>
-        <div class="map-frame journal-map-frame">
-          <div id="run-map" role="region" aria-label="Interactive map of recorded Philadelphia running routes"></div>
-          <p id="map-status" class="map-status" aria-live="polite">Loading the running record…</p>
-          <div class="map-legend" aria-label="Map legend">
-            <span><i class="legend-line legend-line--run"></i> recorded route</span>
-          </div>
-        </div>
-        <p class="map-caption">This is an aggregate of route traces, not a street-by-street scorecard. It deliberately shows only what the GPS archive can prove.</p>
+        <a class="map-open-link" href="/map/" target="_blank" rel="noopener">Open the interactive map <span aria-hidden="true">↗</span></a>
       </section>
 
       <section class="story-section" aria-labelledby="story-title">
@@ -79,11 +69,6 @@
       </section>
     </main>
     <footer class="site-footer"><p>Every Street Philly</p><a href="mailto:hello@example.com">Contact</a></footer>
-    <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
-    <script src="data/philly-boundary.js"></script>
-    <script>window.EVERY_STREET_SCORECARD_ENABLED = true;</script>
-    <script src="data/scorecard.js"></script>
-    <script src="data/runs.js"></script>
     <script src="script.js"></script>
   </body>
 </html>

@@ -4,14 +4,13 @@ Read this first when reopening the project in VS Code/Codex.
 
 ## Current state
 
-This is a static GitHub Pages site whose principal feature is an interactive
-Philadelphia running map. The current `index.html` is the preferred
-field-journal layout: desktop text is on the left and the map is intentionally
-tall on the right. The stylesheet query string
-`variation.css?v=20260728-layout` is intentional—it busts a Chrome cache issue
-that made an earlier layout update look as though it had not applied.
+This is a static site intended for Netlify. `index.html` is the information page
+with the story and guestbook; it links to a standalone, detailed Citystrides-style
+map at `map/index.html` (`/map/`) in a new tab. The map is a single HTML file
+with its route archive embedded. The original local scorecard page/data and its
+refresh pipeline remain in the repository for the field-journal preview.
 
-The visible map is **scorecard mode**:
+The detailed public map in `map/index.html` is separate from the older field-journal preview. The latter is **scorecard mode**:
 
 - Black = completed street coverage **and** original recorded GPS routes.
 - Coral = a named, runnable street-network way not yet verified complete.
@@ -27,10 +26,11 @@ replacement.
 ## Files that matter
 
 ```text
-index.html                    deployed entry page; scorecard enabled here
+index.html                    information page, story, guestbook, and map link
+map/index.html                detailed public map page; route and map data embedded
 styles.css                    shared site styling
-variation.css                 field-journal / tall-map desktop layout
-script.js                     MapLibre map, layers, boundary mask, guestbook
+variation.css                 field-journal layout and homepage map launch card
+script.js                     legacy field-journal map and shared guestbook behavior
 data/runs.js                  local GPS route data used in browser
 data/scorecard.js             local completed + remaining street data
 data/philly-boundary.js       local city boundary
@@ -40,8 +40,9 @@ phila.png / og.png            decorative outline / social preview
 .nojekyll                     keep for GitHub Pages
 ```
 
-Keep this folder structure unchanged when publishing. In particular, `data/`
-must be beside `index.html`.
+Keep the repository root as Netlify’s publish directory. Preserve the `data/`
+folder beside the home page because the local preview and refresh pipeline still
+use it.
 
 ## Design / behavior constraints
 

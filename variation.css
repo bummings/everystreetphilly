@@ -157,3 +157,13 @@
   .journal-map-frame { min-height: 65vh; }
   .story-section { padding-inline: 0.5rem; }
 }
+
+
+/* Standalone map launch from the information page. */
+.map-ledger.map-launch { display: flex; align-items: center; justify-content: space-between; gap: 2rem; min-height: 230px; }
+.map-launch-copy { max-width: 42rem; }
+.map-launch-copy > p:last-child { max-width: 34rem; color: var(--muted); line-height: 1.65; }
+.map-launch-copy h2 { margin: 0.35rem 0 0.8rem; font-size: clamp(2rem, 3.5vw, 3.7rem); }
+.map-open-link { display: inline-flex; align-items: center; gap: 0.7rem; flex: none; padding: 0.9rem 1.15rem; border: 1px solid var(--text); border-radius: 999px; color: var(--text); font-family: "IBM Plex Mono", monospace; font-size: 0.78rem; text-decoration: none; transition: background 160ms ease, color 160ms ease, transform 160ms ease; }
+.map-open-link:hover { transform: translateY(-2px); background: var(--text); color: var(--paper); }
+@media (max-width: 700px) { .map-ledger.map-launch { align-items: flex-start; flex-direction: column; min-height: 0; } }

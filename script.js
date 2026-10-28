@@ -18,6 +18,8 @@ const saveEntries = (entries) => {
 const initializeRunMap = async () => {
   const status = document.querySelector("#map-status");
 
+  if (!status) return;
+
   if (!window.maplibregl) {
     status.textContent = "The interactive map needs an internet connection to load.";
     return;
