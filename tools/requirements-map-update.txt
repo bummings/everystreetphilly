@@ -1,0 +1,2 @@
+fitdecode>=0.10
+shapely>=2.0

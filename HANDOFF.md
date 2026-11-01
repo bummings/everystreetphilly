@@ -42,6 +42,9 @@ data/scorecard.js             local completed + remaining street data
 data/philly-boundary.js       local city boundary
 data/scorecard-summary.json   scorecard totals/settings snapshot
 tools/build-routes.py         Strava activity export → browser GPS route layer
+tools/update-map.py           merge exported GPS activities into map route + red layer
+tools/sync-strava-map.py      incremental Strava API sync → map route + red-line update
+tools/requirements-map-update.txt dependencies for the incremental map updater
 phila.png / og.png            decorative outline / social preview
 .nojekyll                     keep for GitHub Pages
 ```
@@ -92,30 +95,75 @@ its own graph, access rules, and matching behavior. Do not promise pixel-perfect
 parity. When coral looks wrong, inspect the individual named street, its OSM
 geometry, and nearby GPS trace before changing thresholds just to hide it.
 
-## Updating runs
+## Updating the map from new runs
 
-There is no automated Strava sync yet. To refresh the **GPS route layer** from
-a Strava export:
+The source of truth does **not** switch from the map GeoJSON to Strava. Keep
+the embedded route archive, Philadelphia boundary, and OSM-derived red street
+geometry already in `map/index.html`. Strava is an additive input for new GPS
+activities. The sync asks the API only for activities after the newest saved
+run (with a two-day overlap to catch delayed uploads), then requests GPS streams
+only for IDs that are not already in the map. It does not need a full Strava
+archive or its media files.
 
-1. Download a refreshed full Strava archive and unzip it.
-2. Install the one dependency: `python3 -m pip install fitdecode`.
-3. Run:
+One-time setup:
 
-   ```sh
-   python3 tools/build-routes.py /path/to/export/activities data/runs.js \
-     --activities-csv /path/to/export/activities.csv
+1. Create a personal app in Strava's API settings. Set its **Authorization
+   Callback Domain** to `localhost`.
+2. Put the app's client ID and client secret in the ignored, local `.env` file
+   at the repository root:
+
+   ```text
+   STRAVA_CLIENT_ID=your-client-id
+   STRAVA_CLIENT_SECRET=your-client-secret
    ```
 
-   The CSV is important: it reliably includes only activities Strava calls
-   `Run`, even when older GPX files have missing or inconsistent embedded
-   activity types. The route layer keeps GPS samples about 7 m apart so the
-   map remains responsive.
-4. Validate the result, then publish `data/runs.js`.
+   Never commit `.env` or `.strava-token.json`. The first sync opens Strava in
+   your browser for consent to read activity data; the refresh token stays in
+   the ignored local token file, not in the website or GitHub.
+3. Install the map updater dependencies once:
 
-This only refreshes the raw black GPS-trace overlay. The completed/remaining
-street scorecard remains an independent snapshot until its separate OSM
-matching pipeline is restored and rerun. A true automatic Strava pull requires
-a hosted backend and Strava OAuth; GitHub Pages alone cannot safely do that.
+   ```sh
+   python3 -m pip install -r tools/requirements-map-update.txt
+   ```
+
+For each update, from the repository root:
+
+1. Preview the incremental sync:
+
+   ```sh
+   python3 tools/sync-strava-map.py
+   ```
+
+2. If the counts look right, apply it:
+
+   ```sh
+   python3 tools/sync-strava-map.py --apply
+   ```
+
+3. Review `/map/`, then commit and push `map/index.html` to deploy. The
+   Strava credentials and tokens are local-only; the public site receives only
+   the map's already-clipped GeoJSON features.
+
+The sync filters to Strava run sports, preserves all existing map runs
+(including records without a Strava link), and deduplicates by Strava activity
+ID. It clips every new GPS stream to the saved Philadelphia boundary, so
+out-of-city runs cannot clutter the map or change its red completion layer.
+When a new track passes within 15 m of saved red street geometry, that covered
+piece is removed. This leaves the current GeoJSON street network as the
+baseline and avoids a wholesale rebuild. The 15 m tolerance can still match a
+nearby parallel street in dense areas, so inspect the preview before applying.
+
+This is a local on-demand sync, not a scheduled cloud job. If desired, a later
+step could automate the sync, but it would need to store OAuth secrets and
+update/publish the static map safely. The Strava API supports time-filtered
+activity listing and per-activity GPS streams; current API authorization and
+rate limits are described in the [Strava API reference](https://developers.strava.com/docs/reference/),
+[authentication guide](https://developers.strava.com/docs/authentication/), and
+[rate limit guide](https://developers.strava.com/docs/rate-limits/).
+
+The legacy `tools/build-routes.py` still produces the separate `data/runs.js`
+used by the field-journal preview. `tools/update-map.py` remains available for
+manual exports or backfills, but normal updates should use the API sync above.
 
 ## Current matching settings (source pipeline)
 

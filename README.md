@@ -66,6 +66,12 @@ send replies from the alias. Do not put the private inbox address in the site
 source or documentation. If another mail provider currently handles the
 domain's MX records, check that setup before changing Mail Settings.
 
-## Updating run data
+## Updating the map
 
-There is no automated Strava sync yet. To refresh the homepage’s GPS route archive, use `tools/build-routes.py` as documented in `HANDOFF.md`. The standalone `/map/` page has its own embedded export and must also be refreshed from the latest Citystrides/Strava data when it changes.
+The map keeps its current embedded GeoJSON as the baseline. `tools/sync-strava-map.py`
+uses the Strava API to fetch only new activities and their GPS streams, then
+adds Philly-clipped routes and updates the red sections. It preserves existing
+runs (including runs without a Strava link) and the saved street network; runs
+outside the city do not add visible routes or affect the red layer. The sync
+previews changes by default and writes only with `--apply`. It avoids repeated
+full Strava archive downloads. See `HANDOFF.md` for one-time setup and use.
