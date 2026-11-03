@@ -70,8 +70,9 @@ domain's MX records, check that setup before changing Mail Settings.
 
 The map keeps its current embedded GeoJSON as the baseline. `tools/sync-strava-map.py`
 uses the Strava API to fetch only new activities and their GPS streams, then
-adds Philly-clipped routes and updates the red sections. It preserves existing
-runs (including runs without a Strava link) and the saved street network; runs
+adds Philly-clipped routes and reconciles red sections against the complete
+saved route archive. This also clears stale red fragments beside older purple
+tracks. It preserves existing runs (including runs without a Strava link) and the saved street network; runs
 outside the city do not add visible routes or affect the red layer. The sync
 previews changes by default and writes only with `--apply`. It avoids repeated
 full Strava archive downloads. See `HANDOFF.md` for one-time setup and use.

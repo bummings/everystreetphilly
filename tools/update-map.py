@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Merge new Philadelphia runs into the map and clear the newly covered red lines.
+"""Merge Philadelphia runs and reconcile red lines against saved route coverage.
 
 The existing map GeoJSON stays the baseline. This imports only Strava Run
 activities newer than the latest route already in map/index.html (unless
 --after is supplied), clips their GPS tracks to the saved Philadelphia boundary,
-and removes red street geometry within the existing 15 m coverage tolerance.
+and removes red street geometry within the existing 15 m coverage tolerance
+wherever any saved run (old or new) passes.
 
 Preview first; pass --apply to write map/index.html.
 """
@@ -27,6 +28,7 @@ try:
     import fitdecode
     from shapely.geometry import GeometryCollection, LineString, MultiLineString, shape, mapping
     from shapely.ops import transform, unary_union
+    from shapely.strtree import STRtree
 except ImportError as error:
     raise SystemExit(
         "Map updating needs the packages in requirements-map-update.txt. "
@@ -36,6 +38,9 @@ except ImportError as error:
 EARTH_RADIUS_M = 6_371_008.8
 MIN_POINT_SPACING_M = 7
 COVERAGE_TOLERANCE_M = 15
+# Leave a small margin for GPS/GeoJSON coordinate rounding so a route exactly
+# at the tolerance edge does not leave a visible red sliver.
+COVERAGE_PRECISION_MARGIN_M = 1.0
 PHILLY_TZ = ZoneInfo("America/New_York")
 
 
@@ -149,6 +154,16 @@ def tag_value(row: dict[str, str], *names: str) -> str:
         if normalized.get(name.lower()):
             return normalized[name.lower()]
     return ""
+
+
+def update_map_timestamp(html: str) -> str:
+    """Keep the visible map-data date in sync with applied imports."""
+    today = datetime.now(PHILLY_TZ).strftime("%b %d, %Y").replace(" 0", " ")
+    pattern = re.compile(r'(<p class="map-updated" id="map-updated">)Map data last updated: [^<]*(</p>)')
+    updated, count = pattern.subn(rf"\g<1>Map data last updated: {today}\g<2>", html, count=1)
+    if count != 1:
+        raise ValueError("Could not find the visible map-updated stamp in map HTML")
+    return updated
 
 
 def read_embedded(html: str, element_id: str) -> tuple[dict, tuple[int, int]]:
@@ -311,16 +326,35 @@ def main() -> None:
 
     print(f"New Philly runs found: {len(imported)}")
     print(f"Skipped: {', '.join(f'{key}={value}' for key, value in skipped.items())}")
-    if not imported:
-        print("Map unchanged.")
-        return
-
-    coverage = unary_union([part for item in imported for part in item["track_xy"]]).buffer(COVERAGE_TOLERANCE_M)
+    # Reconcile against the complete saved route archive, not just activities
+    # imported in this run. Older red fragments can otherwise persist even
+    # when a purple GPS track already covers that street.
+    coverage_lines = []
+    for feature in current:
+        try:
+            geometry = transform(project, shape(feature["geometry"]))
+        except Exception:
+            continue
+        coverage_lines.extend(line_parts(geometry))
+    coverage_lines.extend(part for item in imported for part in item["track_xy"])
+    coverage_tree = STRtree(coverage_lines) if coverage_lines else None
+    coverage_radius = COVERAGE_TOLERANCE_M + COVERAGE_PRECISION_MARGIN_M
     revised_red = []
     before_lines = len(red.get("features", []))
     for feature in red.get("features", []):
         original = transform(project, shape(feature["geometry"]))
-        remainder = original.difference(coverage)
+        if coverage_tree is None:
+            remainder = original
+        else:
+            candidate_ids = coverage_tree.query(original.buffer(coverage_radius))
+            if len(candidate_ids):
+                local_coverage = unary_union([
+                    coverage_lines[int(index)].buffer(coverage_radius)
+                    for index in candidate_ids
+                ])
+                remainder = original.difference(local_coverage)
+            else:
+                remainder = original
         for part in line_parts(remainder):
             revised_red.append({"type": "Feature", "properties": feature.get("properties", {}), "geometry": rounded_geometry(transform(unproject, part))})
     before_streets = {str(f.get("properties", {}).get("street_id", "")) for f in red.get("features", [])}
@@ -338,6 +372,7 @@ def main() -> None:
                     (red_span, json.dumps(red, separators=(",", ":"), ensure_ascii=False))]
     for (start, end), content in sorted(replacements, reverse=True):
         html = html[:start] + content + html[end:]
+    html = update_map_timestamp(html)
     args.map_html.write_text(html, encoding="utf-8")
     print(f"Updated {args.map_html}: {len(routes['features'])} total runs.")
 

@@ -148,10 +148,13 @@ The sync filters to Strava run sports, preserves all existing map runs
 (including records without a Strava link), and deduplicates by Strava activity
 ID. It clips every new GPS stream to the saved Philadelphia boundary, so
 out-of-city runs cannot clutter the map or change its red completion layer.
-When a new track passes within 15 m of saved red street geometry, that covered
-piece is removed. This leaves the current GeoJSON street network as the
-baseline and avoids a wholesale rebuild. The 15 m tolerance can still match a
-nearby parallel street in dense areas, so inspect the preview before applying.
+Each applied update reconciles all red geometry against the complete saved
+route archive and newly imported tracks. Any red piece within 15 m of a saved
+GPS track is removed, with a 1 m precision allowance to avoid tiny edge
+slivers. This also clears stale red fragments beside older purple tracks. The
+current GeoJSON street network remains the baseline; no wholesale rebuild is
+needed. The tolerance can still match a nearby parallel street in dense areas,
+so inspect the preview before applying.
 
 This is a local on-demand sync, not a scheduled cloud job. If desired, a later
 step could automate the sync, but it would need to store OAuth secrets and
