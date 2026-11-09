@@ -9,6 +9,7 @@ import importlib.util
 import json
 import math
 import re
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
@@ -174,6 +175,12 @@ def main():
         html = html[:start] + content + html[end:]
     html = mod.update_map_timestamp(html)
     args.map_html.write_text(html, encoding="utf-8")
+    builder = Path(__file__).with_name("build-history.py")
+    subprocess.run(
+        [sys.executable, str(builder), "--map-html", str(args.map_html.resolve()), "--apply"],
+        cwd=ROOT,
+        check=True,
+    )
     streets = {str(f.get("properties", {}).get("street_id", "")) for f in remaining} - {""}
     print(f"Added {name} ({started.date()}, {distance / 1609.344:.2f} mi).")
     print(f"Map now has {len(routes['features'])} runs and {len(streets)} unfinished streets.")

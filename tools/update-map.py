@@ -18,6 +18,7 @@ import gzip
 import json
 import math
 import re
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
@@ -375,6 +376,13 @@ def main() -> None:
     html = update_map_timestamp(html)
     args.map_html.write_text(html, encoding="utf-8")
     print(f"Updated {args.map_html}: {len(routes['features'])} total runs.")
+    builder = Path(__file__).with_name("build-history.py")
+    root = Path(__file__).resolve().parents[1]
+    subprocess.run(
+        [sys.executable, str(builder), "--map-html", str(args.map_html.resolve()), "--apply"],
+        cwd=root,
+        check=True,
+    )
 
 
 if __name__ == "__main__":

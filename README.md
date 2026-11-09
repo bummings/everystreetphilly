@@ -45,7 +45,7 @@ Add `everystreetphilly.com` to the Netlify site’s domain settings first. DNS i
 
 ## Map behavior
 
-The run map is a standalone HTML page with its route, Philadelphia boundary, and incomplete-street data embedded. MapLibre and the OpenFreeMap basemap load from the internet, so map tiles and the map library require a connection. Profile icons link to Strava and CityStrides. Runs without a Strava activity ID remain clickable through their CityStrides activity page; the local link-entry tool is omitted from the public page.
+The run map is a standalone HTML page with its route, Philadelphia boundary, and street data embedded. MapLibre and the OpenFreeMap basemap load from the internet, so map tiles and the map library require a connection. Profile icons link to Strava and CityStrides. Runs without a Strava activity ID remain clickable through their CityStrides activity page; the local link-entry tool is omitted from the public page. Red unfinished streets respond to the selected end date: they show streets not yet covered by a saved route by that date. Purple runs continue to respond to both date fields.
 
 The home page retains the project information. The guestbook frontend is
 temporarily disabled; when restored, it will use the Netlify-backed behavior
@@ -68,11 +68,13 @@ domain's MX records, check that setup before changing Mail Settings.
 
 ## Updating the map
 
-The map keeps its current embedded GeoJSON as the baseline. `tools/sync-strava-map.py`
+The map keeps its current embedded GeoJSON as the present-day baseline. `tools/sync-strava-map.py`
 uses the Strava API to fetch only new activities and their GPS streams, then
-adds Philly-clipped routes and reconciles red sections against the complete
-saved route archive. This also clears stale red fragments beside older purple
-tracks. It preserves existing runs (including runs without a Strava link) and the saved street network; runs
-outside the city do not add visible routes or affect the red layer. The sync
-previews changes by default and writes only with `--apply`. It avoids repeated
-full Strava archive downloads. See `HANDOFF.md` for one-time setup and use.
+adds Philly-clipped routes and reconciles current red sections against the saved
+route archive. Applied Strava syncs and `tools/add-gpx-run.py` imports also
+rebuild the historical red layer automatically from the saved routes and the
+OSM street snapshot at `data/philadelphia-streets.json.gz`. Red streets are
+shown as incomplete until their first saved GPS pass. Strava remains an
+optional source for new routes, not the map's source of truth. The historical
+view is an OSM-based approximation of CityStrides' street inventory and uses
+the map's 15 m GPS matching tolerance. See `HANDOFF.md` for details.

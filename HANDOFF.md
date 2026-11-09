@@ -12,7 +12,7 @@ Netlify backend and moderator page remain in the repository. The map is a single
 HTML file with its route archive embedded. The original local scorecard page/data
 and its refresh pipeline remain in the repository for the field-journal preview.
 
-The detailed public map in `map/index.html` is separate from the older field-journal preview. The latter is **scorecard mode**:
+The detailed public map in `map/index.html` has a date-aware red unfinished-street layer. Purple routes follow the selected date range; red streets show what was still unfinished as of the selected end date. The older field-journal preview is **scorecard mode**:
 
 - Black = completed street coverage **and** original recorded GPS routes.
 - Coral = a named, runnable street-network way not yet verified complete.
@@ -44,6 +44,7 @@ data/scorecard-summary.json   scorecard totals/settings snapshot
 tools/build-routes.py         Strava activity export → browser GPS route layer
 tools/update-map.py           merge exported GPS activities into map route + red layer
 tools/sync-strava-map.py      incremental Strava API sync → map route + red-line update
+tools/build-history.py        rebuild historical unfinished streets from saved routes + OSM snapshot
 tools/requirements-map-update.txt dependencies for the incremental map updater
 phila.png / og.png            decorative outline / social preview
 .nojekyll                     keep for GitHub Pages
@@ -148,13 +149,24 @@ The sync filters to Strava run sports, preserves all existing map runs
 (including records without a Strava link), and deduplicates by Strava activity
 ID. It clips every new GPS stream to the saved Philadelphia boundary, so
 out-of-city runs cannot clutter the map or change its red completion layer.
-Each applied update reconciles all red geometry against the complete saved
+Each applied update reconciles current red geometry against the complete saved
 route archive and newly imported tracks. Any red piece within 15 m of a saved
 GPS track is removed, with a 1 m precision allowance to avoid tiny edge
-slivers. This also clears stale red fragments beside older purple tracks. The
-current GeoJSON street network remains the baseline; no wholesale rebuild is
-needed. The tolerance can still match a nearby parallel street in dense areas,
-so inspect the preview before applying.
+slivers. The same apply step automatically rebuilds `history-data` using
+`tools/build-history.py`, the saved route archive, and the compressed OSM
+snapshot at `data/philadelphia-streets.json.gz`. The map then shows historical
+red streets until the first saved GPS pass on or before the selected end date.
+Changing the start date affects purple routes only. Manual GPX imports through
+`tools/add-gpx-run.py` rebuild this history too.
+
+The history layer uses named, walkable OSM ways as its street inventory and
+matches saved GPS tracks within 16 m (15 m tolerance plus a 1 m precision
+allowance). It is an OSM-based approximation, not an official CityStrides
+history export; OSM and CityStrides may define streets differently. The current
+embedded red layer remains authoritative for today's unfinished streets. OSM
+data is © OpenStreetMap contributors and is available under the ODbL; retain
+the map attribution when sharing the site. The tolerance can still match a
+nearby parallel street in dense areas, so inspect the map after applying.
 
 This is a local on-demand sync, not a scheduled cloud job. If desired, a later
 step could automate the sync, but it would need to store OAuth secrets and
