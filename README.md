@@ -77,4 +77,7 @@ OSM street snapshot at `data/philadelphia-streets.json.gz`. Red streets are
 shown as incomplete until their first saved GPS pass. Strava remains an
 optional source for new routes, not the map's source of truth. The historical
 view is an OSM-based approximation of CityStrides' street inventory and uses
-the map's 15 m GPS matching tolerance. See `HANDOFF.md` for details.
+the map's 15 m GPS matching tolerance. For named, multi-lane one-way roads,
+matching is widened within that same named road corridor so both carriageways
+count as one street; explicitly non-pedestrian motorway/trunk sections are
+excluded. See `HANDOFF.md` for details.

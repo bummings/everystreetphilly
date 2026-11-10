@@ -168,6 +168,16 @@ data is © OpenStreetMap contributors and is available under the ODbL; retain
 the map attribution when sharing the site. The tolerance can still match a
 nearby parallel street in dense areas, so inspect the map after applying.
 
+Multi-lane one-way OSM roads with a shared name are treated as one local
+corridor: a GPS pass on that named road clears the paired carriageway within
+60 m, while unrelated street names still use the normal 16 m matching radius.
+Explicit motorway/motorway-link/trunk-link ways, `foot=no` ways, and trunk ways
+tagged `sidewalk=no` are removed from the incomplete layer. This specifically
+prevents Roosevelt Boulevard's tagged express lanes from remaining red. The
+same rules rebuild both current and historical red geometry after an applied
+Strava or GPX update.
+
+
 This is a local on-demand sync, not a scheduled cloud job. If desired, a later
 step could automate the sync, but it would need to store OAuth secrets and
 update/publish the static map safely. The Strava API supports time-filtered

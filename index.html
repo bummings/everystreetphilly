@@ -7,46 +7,66 @@
     <meta name="description" content="A field journal for running every street in Philadelphia." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="variation.css?v=20260728-flag-v10" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20261109-nav-fix" />
+    <link rel="stylesheet" href="variation.css?v=20261109-nav-fix" />
+    <link rel="stylesheet" href="themes.css?v=20261110-scroll-4" />
+    <script src="site-navigation.js?v=20261109-nav-fix"></script>
   </head>
-  <body class="field-journal">
+  <body class="broadsheet">
     <main class="page-shell journal-shell">
-      <header class="masthead" aria-labelledby="headline">
-        <div class="masthead-copy">
-          <p class="eyebrow">every street philly</p>
-          <h1 id="headline">Runnin' every street in Philadelphia</h1>
-          <p class="masthead-lede">the whole tangled, sprawlin, beautiful thing.</p>
+      <nav class="site-nav" aria-label="Main navigation">
+        <a class="site-brand" href="#welcome">every street philly</a>
+        <div class="site-nav-links">
+          <a href="#welcome" data-view-link="welcome" aria-current="page">welcome</a>
+          <a href="/map/" target="_blank" rel="noopener">map</a>
+          <a href="#">about</a>
+          <a href="#guestbook" data-view-link="guestbook">guestbook</a>
         </div>
-        <div class="masthead-art">
-          <img class="masthead-flag" src="assets/everystreetflag-crest-v3.png" alt="Every Street Philly flag emblem" />
-        </div>
-      </header>
+      </nav>
+      <div class="page-view is-active" id="welcome" data-view="welcome" aria-labelledby="headline">
+        <header class="masthead">
+          <div class="masthead-copy">
+            <h1 id="headline">Runnin every street in Philadelphia</h1>
+            <p class="masthead-lede">the whole tangled, sprawlin, beautiful thing</p>
+          </div>
+          <div class="masthead-art">
+            <img class="masthead-flag" src="assets/everystreetflag-crest-v3.png" alt="Every Street Philly flag emblem" />
+          </div>
+        </header>
 
-      <section class="map-ledger map-launch" aria-labelledby="map-title">
-        <div class="map-launch-copy">
-          <p class="eyebrow">the map</p>
-          <h2 id="map-title">The whole city, one run at a time.</h2>
-          <p>Browse the routes, filter by date, and see the streets still waiting.</p>
-        </div>
-        <a class="map-open-link" href="/map/" target="_blank" rel="noopener">Open the interactive map <span aria-hidden="true">↗</span></a>
-      </section>
+        <section class="map-ledger map-launch" aria-labelledby="map-title">
+          <div class="map-launch-copy">
+            <p class="eyebrow">the map</p>
+            <h2 id="map-title">The whole city, one run at a time.</h2>
+            <p>Browse the routes, filter by date, and see the streets still waiting.</p>
+          </div>
+          <a class="map-open-link" href="/map/" target="_blank" rel="noopener">Open the interactive map <span aria-hidden="true">↗</span></a>
+        </section>
+        <section class="story-section">
+          <div class="story-label">
+            <p class="eyebrow">why do this</p>
+            <h2 id="story-title">The city of Philadelphia was established in 1682.</h2>
+          </div>
+          <div class="story-copy">
+            <p>Philadelphia contains 3,937 streets, depending on who is counting, what qualifies as a street, and whether certain alleys, ramps, service roads, and suspicious asphalt appendages have successfully completed the necessary paperwork.</p>
+            <p>So ya run em where they are: broad avenues, dead-ends, industrial access, half-blocks, forgotten lanes, and streets that appear completely ordinary on the map but turn out to be a fence, a staircase, a loading dock, &c., &c., </p>
+            <p>To pass through every street in Philadelphia is to move through an unusually broad cross-section of American life— rowhomes and skyscrapers, schoolyards and warehouses, shrines, murals, corner bars, corner shops, houses o worship, and memory all at once.</p>
+          </div>
+        </section>
+      </div>
 
-      <section class="story-section" aria-labelledby="story-title">
-        <div class="story-label">
-          <p class="eyebrow">why do this</p>
-          <h2 id="story-title">The city of Philadelphia was established in 1682.</h2>
-        </div>
-        <div class="story-copy">
-          <p>Philadelphia contains 3,937 streets, depending on who is counting, what qualifies as a street, and whether certain alleys, ramps, service roads, and suspicious asphalt appendages have successfully completed the necessary paperwork.</p>
-          <p>So ya run em where they are: broad avenues, dead-ends, industrial access, half-blocks, forgotten lanes, and streets that appear completely ordinary on the map but turn out to be a fence, a staircase, a loading dock, &c., &c., </p>
-          <p>To pass through every street in Philadelphia is to move through an unusually broad cross-section of American life— rowhomes and skyscrapers, schoolyards and warehouses, shrines, murals, corner bars, corner shops, houses o worship, and memory all at once.</p>
-        </div>
-      </section>
-
+      <div class="page-view guestbook-view" id="guestbook" data-view="guestbook" aria-labelledby="guestbook-title" hidden>
+        <h1 id="guestbook-title">Guestbook</h1>
+      </div>
     </main>
-    <footer class="site-footer"><p>Every Street Philly</p><a href="mailto:hello@everystreetphilly.com">Contact</a></footer>
+    <footer class="site-footer">
+      <div class="site-footer-credit">
+        
+        <a href="http://bummings.io">built by bummings</a>
+      </div>
+      <img class="site-footer-logo" src="assets/esp-thick.png" alt="Every Street Philly logo" />
+    </footer>
     <script src="script.js"></script>
   </body>
 </html>

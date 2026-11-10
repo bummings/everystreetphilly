@@ -129,10 +129,11 @@ def main() -> None:
     if not route_dates:
         raise SystemExit("No dated route geometry found in route-data")
     buffers = []
+    all_route_parts = []
     for date in route_dates:
         route_parts = [part for route in routes_by_date[date] for part in all_line_parts(route)]
-        buffered_parts = shapely.buffer(route_parts, COVERAGE_TOLERANCE_M, quad_segs=4)
-        buffers.append(unary_union(buffered_parts))
+        all_route_parts.extend(route_parts)
+        buffers.append(unary_union(shapely.buffer(route_parts, COVERAGE_TOLERANCE_M, quad_segs=4)))
     tree = STRtree(buffers)
 
     # Match historical geometries to the same street IDs used by the current
@@ -148,6 +149,62 @@ def main() -> None:
     with gzip.open(args.streets, "rt", encoding="utf-8") as stream:
         street_data = json.load(stream)
 
+    # Treat one-way, multi-lane carriageways sharing a street name as one
+    # corridor. Explicitly non-pedestrian trunk/motorway pieces are excluded
+    # from unfinished streets (notably Roosevelt Boulevard's express lanes).
+    wide_lines_by_name = defaultdict(list)
+    excluded_by_name = defaultdict(list)
+    for element in street_data.get("elements", []):
+        tags = element.get("tags", {})
+        name = str(tags.get("name", "")).strip()
+        coords = [(float(point["lon"]), float(point["lat"])) for point in element.get("geometry", [])]
+        if not name or len(coords) < 2:
+            continue
+        highway = str(tags.get("highway", ""))
+        sidewalk = str(tags.get("sidewalk", "")).casefold()
+        foot = str(tags.get("foot", "")).casefold()
+        if (highway in {"motorway", "motorway_link", "trunk_link"}
+                or foot in {"no", "private", "use_sidepath"}
+                or str(tags.get("motorroad", "")).casefold() == "yes"
+                or (highway == "trunk" and sidewalk == "no")):
+            excluded_by_name[name.casefold()].append(transform(project, LineString(coords)).buffer(12))
+        if highway in {"primary", "secondary", "tertiary", "trunk"} and tags.get("oneway") == "yes":
+            try:
+                lanes = int(str(tags.get("lanes", "1")).split(";")[0])
+            except ValueError:
+                lanes = 1
+            if lanes >= 2:
+                wide_lines_by_name[name.casefold()].append(
+                    transform(project, LineString(coords)).intersection(boundary_xy)
+                )
+    excluded_by_name = {name: unary_union(geometries) for name, geometries in excluded_by_name.items()}
+    wide_lines_by_name = {
+        name: unary_union(lines).difference(excluded_by_name.get(name, GeometryCollection()))
+        for name, lines in wide_lines_by_name.items()
+    }
+    wide_corridors_by_name = {}
+    wide_dates_by_name = {}
+    for name, road_lines in wide_lines_by_name.items():
+        corridors, dates = [], []
+        for index, route_buffer in enumerate(buffers):
+            run_on_named_road = road_lines.intersection(route_buffer)
+            if not run_on_named_road.is_empty and run_on_named_road.length > 0:
+                corridors.append(run_on_named_road.buffer(60))
+                dates.append(index)
+        if corridors:
+            wide_corridors_by_name[name] = corridors
+            wide_dates_by_name[name] = dates
+    wide_trees_by_name = {
+        name: STRtree(corridors) for name, corridors in wide_corridors_by_name.items()
+    }
+
+    all_route_buffer = unary_union(shapely.buffer(all_route_parts, COVERAGE_TOLERANCE_M, quad_segs=4))
+    current_wide_coverage = {
+        name: road_lines.intersection(all_route_buffer).buffer(60)
+        for name, road_lines in wide_lines_by_name.items()
+        if road_lines.intersects(all_route_buffer)
+    }
+
     dated_parts = defaultdict(list)
     street_ids_by_date = defaultdict(set)
     way_count = 0
@@ -160,28 +217,46 @@ def main() -> None:
         if not name or len(coords) < 2:
             continue
         line = transform(project, LineString(coords)).intersection(boundary_xy)
+        if name.casefold() in excluded_by_name:
+            line = line.difference(excluded_by_name[name.casefold()])
         if line.is_empty or line.length <= 1:
             continue
         way_count += 1
         if way_count % 5000 == 0:
             print(f"Processed {way_count:,} street ways; {len(dated_parts):,} date/name groups so far.", flush=True)
-        candidates = tree.query(line, predicate="intersects")
+        normalized = name.casefold()
+        is_wide_road = normalized in wide_lines_by_name
+        if is_wide_road:
+            corridors = wide_corridors_by_name.get(normalized, [])
+            if not corridors:
+                continue
+            local_tree = wide_trees_by_name[normalized]
+            candidates = local_tree.query(line, predicate="intersects")
+        else:
+            corridors = buffers
+            candidates = tree.query(line, predicate="intersects")
         if len(candidates) == 0:
             continue
         remaining = line
         for candidate in sorted(int(index) for index in candidates):
-            covered = remaining.intersection(buffers[candidate])
+            if is_wide_road:
+                route_date_index = wide_dates_by_name[normalized][candidate]
+                corridor = corridors[candidate]
+            else:
+                route_date_index = candidate
+                corridor = buffers[candidate]
+            covered = remaining.intersection(corridor)
             parts = list(line_parts(covered))
             if parts:
                 matched_way_count += 1
-                normalized = name.casefold()
                 existing_ids = sorted(current_ids_by_name.get(normalized, ()))
                 street_id = existing_ids[0] if existing_ids else f"osm-name:{normalized}"
-                dated_parts[route_dates[candidate]].extend(parts)
-                street_ids_by_date[route_dates[candidate]].add(street_id)
-                remaining = remaining.difference(buffers[candidate])
+                dated_parts[route_dates[route_date_index]].extend(parts)
+                street_ids_by_date[route_dates[route_date_index]].add(street_id)
+                remaining = remaining.difference(corridor)
                 if remaining.is_empty:
                     break
+
 
     output_features = []
     for date, geometries in sorted(dated_parts.items()):
@@ -203,6 +278,22 @@ def main() -> None:
         )
 
     collection = {"type": "FeatureCollection", "features": output_features}
+
+    # Recalculate today's red layer with the same corridor rules, keeping the
+    # embedded GeoJSON authoritative while fixing divided-road false reds.
+    revised_unrun = []
+    for feature in current_unrun.get("features", []):
+        props = feature.get("properties", {})
+        name = str(props.get("street_name", "")).casefold()
+        line = transform(project, shape(feature["geometry"]))
+        if name in excluded_by_name:
+            line = line.difference(excluded_by_name[name])
+        route_buffer = current_wide_coverage.get(name, all_route_buffer)
+        line = line.difference(route_buffer)
+        for part in line_parts(line):
+            revised_unrun.append({"type": "Feature", "properties": props,
+                                  "geometry": rounded_geometry(transform(unproject, part))})
+    current_unrun["features"] = revised_unrun
     print(
         f"Built {len(output_features):,} dated street pieces from {way_count:,} OSM ways; "
         f"{matched_way_count:,} way/date sections matched run coverage."
@@ -226,6 +317,11 @@ def main() -> None:
             raise ValueError("Could not find unrun-data while inserting historical data")
         insert_at = unrun_match.end()
         html = html[:insert_at] + f'<script type="application/json" id="history-data">{encoded}</script>' + html[insert_at:]
+    unrun_pattern = re.compile(
+        r'(<script[^>]*\bid=["\']unrun-data["\'][^>]*>)(.*?)(</script>)', re.S
+    )
+    unrun_match = unrun_pattern.search(html)
+    html = html[: unrun_match.start(2)] + json.dumps(current_unrun, separators=(",", ":"), ensure_ascii=False) + html[unrun_match.end(2) :]
     args.map_html.write_text(html, encoding="utf-8")
     print(f"Wrote {len(encoded):,} bytes of history data into {args.map_html}.")
 
