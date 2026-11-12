@@ -309,9 +309,14 @@ h2,
 
   .site-nav a.site-brand {
     justify-self: start;
-    padding: 0.55rem 0.8rem;
+    min-height: 2.4rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
     font-size: 0.68rem;
   }
+
+  .site-nav a.site-brand:hover { background: transparent; }
 
   .masthead {
     grid-template-areas: "copy" "art";
