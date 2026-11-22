@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Build a date-aware red street layer from the saved routes and OSM streets.
 
-The current red layer remains the authoritative present-day unfinished layer.
-This adds geometry for street sections that are complete today, tagged with the
-first saved-run date that passed within the map's 16 m matching radius. The
-browser can then show those sections as red when the selected end date predates
-their first completion.
+The current red layer supplies the authoritative list of present-day unfinished
+street IDs. Its geometry is rebuilt from connected OSM ways and saved-run tracks
+so unfinished segments render continuously. The history layer tags completed
+sections with the first saved-run date that followed a street for a meaningful
+distance inside the map's 16 m matching radius.
 
 Requires tools/requirements-map-update.txt. The source street network is the
 named, walkable Philadelphia OSM way set saved at data/philadelphia-streets.json.gz.
@@ -22,12 +22,16 @@ from collections import defaultdict
 from pathlib import Path
 
 from shapely.geometry import GeometryCollection, LineString, MultiLineString, shape, mapping
-from shapely.ops import transform, unary_union
+from shapely.ops import linemerge, transform, unary_union
 from shapely.strtree import STRtree
 import shapely
 
 EARTH_RADIUS_M = 6_371_008.8
 COVERAGE_TOLERANCE_M = 16
+# A perpendicular crossing enters the 16 m GPS matching corridor for at most
+# about 32 m along a street. Require a longer along-street match before calling
+# that section complete; this avoids short false gaps in the red unfinished line.
+MIN_STREET_MATCH_M = 36
 
 
 def read_embedded(html: str, element_id: str) -> tuple[dict, tuple[int, int]]:
@@ -63,6 +67,29 @@ def line_parts(geometry):
     elif isinstance(geometry, (MultiLineString, GeometryCollection)):
         for part in geometry.geoms:
             yield from line_parts(part)
+
+
+def substantial_coverage(line, route_buffer):
+    """Return only route coverage that follows a street for a useful distance."""
+    matched = [part for part in line_parts(line.intersection(route_buffer))
+               if part.length >= MIN_STREET_MATCH_M]
+    return unary_union(matched) if matched else GeometryCollection()
+
+
+def merge_linework(geometry):
+    return geometry if isinstance(geometry, LineString) else linemerge(geometry)
+
+
+def collapse_parallel_linework(geometry, separation_m=65, overlap_ratio=0.78):
+    """Keep one representative trace where same-name carriageways run together."""
+    parts = sorted(all_line_parts(geometry), key=lambda part: part.length, reverse=True)
+    representative = []
+    for part in parts:
+        if any(part.intersection(existing.buffer(separation_m)).length
+               / max(part.length, 1) >= overlap_ratio for existing in representative):
+            continue
+        representative.append(part)
+    return merge_linework(unary_union(representative)) if representative else GeometryCollection()
 
 
 def all_line_parts(geometry):
@@ -187,7 +214,7 @@ def main() -> None:
     for name, road_lines in wide_lines_by_name.items():
         corridors, dates = [], []
         for index, route_buffer in enumerate(buffers):
-            run_on_named_road = road_lines.intersection(route_buffer)
+            run_on_named_road = substantial_coverage(road_lines, route_buffer)
             if not run_on_named_road.is_empty and run_on_named_road.length > 0:
                 corridors.append(run_on_named_road.buffer(60))
                 dates.append(index)
@@ -200,7 +227,7 @@ def main() -> None:
 
     all_route_buffer = unary_union(shapely.buffer(all_route_parts, COVERAGE_TOLERANCE_M, quad_segs=4))
     current_wide_coverage = {
-        name: road_lines.intersection(all_route_buffer).buffer(60)
+        name: substantial_coverage(road_lines, all_route_buffer).buffer(60)
         for name, road_lines in wide_lines_by_name.items()
         if road_lines.intersects(all_route_buffer)
     }
@@ -245,7 +272,7 @@ def main() -> None:
             else:
                 route_date_index = candidate
                 corridor = buffers[candidate]
-            covered = remaining.intersection(corridor)
+            covered = substantial_coverage(remaining, corridor)
             parts = list(line_parts(covered))
             if parts:
                 matched_way_count += 1
@@ -253,14 +280,14 @@ def main() -> None:
                 street_id = existing_ids[0] if existing_ids else f"osm-name:{normalized}"
                 dated_parts[route_dates[route_date_index]].extend(parts)
                 street_ids_by_date[route_dates[route_date_index]].add(street_id)
-                remaining = remaining.difference(corridor)
+                remaining = remaining.difference(covered)
                 if remaining.is_empty:
                     break
 
 
     output_features = []
     for date, geometries in sorted(dated_parts.items()):
-        merged = unary_union(geometries)
+        merged = merge_linework(unary_union(geometries))
         wgs84 = transform(unproject, merged)
         line_geometries = list(all_line_parts(wgs84))
         if not line_geometries:
@@ -279,17 +306,80 @@ def main() -> None:
 
     collection = {"type": "FeatureCollection", "features": output_features}
 
-    # Recalculate today's red layer with the same corridor rules, keeping the
-    # embedded GeoJSON authoritative while fixing divided-road false reds.
-    revised_unrun = []
+    # Rebuild today's red layer from whole OSM ways. The embedded red layer is
+    # already cut into small leftovers, so subtracting GPS tracks from it again
+    # preserves those tiny fragments forever. Use those leftovers only to find
+    # the corresponding named OSM ways, then restore connected same-name ways
+    # before subtracting saved-track coverage. This yields continuous red runs
+    # that stop exactly where the purple coverage buffer begins.
+    incomplete_names = set(current_ids_by_name)
+    source_red_by_name = defaultdict(list)
+    props_by_name = {}
     for feature in current_unrun.get("features", []):
         props = feature.get("properties", {})
-        name = str(props.get("street_name", "")).casefold()
-        line = transform(project, shape(feature["geometry"]))
+        name = str(props.get("street_name", "")).strip().casefold()
+        if name:
+            source_red_by_name[name].append(transform(project, shape(feature["geometry"])))
+            props_by_name.setdefault(name, props)
+
+    road_lines_by_name = defaultdict(list)
+    for element in street_data.get("elements", []):
+        tags = element.get("tags", {})
+        name = str(tags.get("name", "")).strip().casefold()
+        if name not in incomplete_names:
+            continue
+        coords = [(float(point["lon"]), float(point["lat"])) for point in element.get("geometry", [])]
+        if len(coords) < 2:
+            continue
+        line = transform(project, LineString(coords)).intersection(boundary_xy)
         if name in excluded_by_name:
             line = line.difference(excluded_by_name[name])
-        route_buffer = current_wide_coverage.get(name, all_route_buffer)
+        if not line.is_empty and line.length > 1:
+            road_lines_by_name[name].append(line)
+
+    revised_unrun = []
+    for name in sorted(incomplete_names):
+        roads = road_lines_by_name.get(name, [])
+        source_red = source_red_by_name.get(name, [])
+        if not roads or not source_red:
+            # Keep the original geometry if a name is absent from this OSM
+            # extract, rather than making an incomplete street disappear.
+            for feature in current_unrun.get("features", []):
+                if str(feature.get("properties", {}).get("street_name", "")).strip().casefold() == name:
+                    revised_unrun.append(feature)
+            continue
+
+        red_seed = unary_union(source_red)
+        selected = {i for i, line in enumerate(roads) if line.distance(red_seed) <= 24}
+        # Join only OSM ways that touch the seeded street network. This keeps
+        # unrelated streets with a reused name from being added elsewhere.
+        while selected:
+            connected = unary_union([roads[i] for i in selected]).buffer(1.5)
+            additions = {i for i, line in enumerate(roads) if i not in selected and line.intersects(connected)}
+            if not additions:
+                break
+            selected.update(additions)
+
+        if not selected:
+            continue
+        line = unary_union([roads[i] for i in selected])
+        if name in wide_lines_by_name:
+            # Treat divided multi-lane streets as one named corridor on the
+            # map. Retain disconnected sections, while dropping parallel
+            # carriageways that substantially trace the same corridor.
+            line = collapse_parallel_linework(merge_linework(line))
+        route_buffer = current_wide_coverage.get(name)
+        if route_buffer is None:
+            route_buffer = substantial_coverage(line, all_route_buffer)
         line = line.difference(route_buffer)
+        # unary_union nodes roads at intersections. Merge those same-street
+        # pieces back into continuous lines while preserving true gaps where a
+        # run follows the street.
+        line = merge_linework(line)
+        props = props_by_name[name]
+        if name in wide_lines_by_name:
+            props = dict(props)
+            props["display_corridor"] = True
         for part in line_parts(line):
             revised_unrun.append({"type": "Feature", "properties": props,
                                   "geometry": rounded_geometry(transform(unproject, part))})
