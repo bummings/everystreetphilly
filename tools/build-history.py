@@ -148,7 +148,10 @@ def main() -> None:
         # intentionally modest relative to the coverage radius and keeps the
         # one-time full-city rebuild from spending minutes buffering every
         # recorded GPS sample.
-        line = transform(project, shape(geometry)).simplify(8.0, preserve_topology=False).intersection(boundary_xy)
+        # Keep matching geometry close to the route displayed in the browser;
+        # a coarser 8 m simplification can move tracks outside the 16 m
+        # coverage buffer on curvy or densely sampled streets.
+        line = transform(project, shape(geometry)).simplify(2.0, preserve_topology=False).intersection(boundary_xy)
         if not line.is_empty:
             routes_by_date[date].append(line)
 
@@ -226,12 +229,6 @@ def main() -> None:
     }
 
     all_route_buffer = unary_union(shapely.buffer(all_route_parts, COVERAGE_TOLERANCE_M, quad_segs=4))
-    current_wide_coverage = {
-        name: substantial_coverage(road_lines, all_route_buffer).buffer(60)
-        for name, road_lines in wide_lines_by_name.items()
-        if road_lines.intersects(all_route_buffer)
-    }
-
     dated_parts = defaultdict(list)
     street_ids_by_date = defaultdict(set)
     way_count = 0
@@ -368,10 +365,21 @@ def main() -> None:
             # map. Retain disconnected sections, while dropping parallel
             # carriageways that substantially trace the same corridor.
             line = collapse_parallel_linework(merge_linework(line))
-        route_buffer = current_wide_coverage.get(name)
-        if route_buffer is None:
-            route_buffer = substantial_coverage(line, all_route_buffer)
-        line = line.difference(route_buffer)
+        # Keep ordinary GPS matching across the entire street. Add the wider
+        # carriageway corridor where OSM identifies a divided multi-lane
+        # section; using that corridor alone misses same-name sections whose
+        # lane tags are absent (for example, Adams Avenue).
+        route_buffer = all_route_buffer
+        if name in wide_lines_by_name:
+            # Extend corridor matching across every OSM way carrying this
+            # street name, not only the short ways explicitly tagged with
+            # lane counts. This treats carriageways as one street even where
+            # those tags are missing from neighboring blocks.
+            named_road = unary_union(roads)
+            followed = substantial_coverage(named_road, all_route_buffer)
+            if not followed.is_empty:
+                route_buffer = unary_union([all_route_buffer, followed.buffer(60)])
+        line = line.difference(substantial_coverage(line, route_buffer))
         # unary_union nodes roads at intersections. Merge those same-street
         # pieces back into continuous lines while preserving true gaps where a
         # run follows the street.
